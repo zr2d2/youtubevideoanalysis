@@ -5,6 +5,7 @@ import gdata.youtube
 import gdata.youtube.service
 import urllib2
 import time
+from Person import Commenter
 
 #Uclassify 
 #Read
@@ -97,13 +98,19 @@ def PrintEntryDetails(entry):
 def PrintUserEntry(user):
   # print required fields where we know there will be information
 #  print 'URI: %s\n' % user.id.text
+  age = None
   if user.age:
     print 'Age: %s\n' % user.age.text
+    age = int(user.age.text)
+  gender = None
   if user.gender:
     print 'Gender: %s\n' % user.gender.text
+    gender = user.gender.text
+  location = None
   if user.location:
     print 'Location: %s\n' % user.location.text
-
+    location = user.location.text
+  return gender, age, location
   # check if there is information in the other fields and if so print it
 #  if user.first_name: 
 #    print 'First Name: %s\n' % user.first_name.text
@@ -143,30 +150,41 @@ PrintEntryDetails(entry)
 AnalyzeComment("This video is great...")
 
 print "Comments:"
-feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
-happy_total = 0
-sad_total = 0
-total = 0
-#1000 Cap
-for x in xrange(0,39):
-	for entry in feed.entry:
-		print entry.content.text #comment
-		#print entry.published.text #date
-		happy, sad = AnalyzeComment(entry.content.text)
-		print "Positive: ", happy
-		print "Negative: ", sad
-		for a in entry.author:
-			try:
-				user_entry = yt_service.GetYouTubeUserEntry(username=a.name.text)
-			except gdata.service.RequestError, e:
-				print "Request Error: ", e
-			else:
-				PrintUserEntry(user_entry)
-		happy_total += happy
-		sad_total += sad
-		total += 1
-	feed = yt_service.Query(feed.GetNextLink().href)
+try:
+	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
+except gdata.service.RequestError, e:
+	print "Request Error: ", e
+else:
 
-print "Overall Positive: ", happy_total/total
-print "Overall Negative: ", sad_total/total
+	happy_total = 0
+	sad_total = 0
+	total = 0
+	#1000 Cap
+	people = []
+	for x in xrange(0,39):
+		for entry in feed.entry:
+			print entry.content.text #comment
+			print entry.published.text #date
+			happy, sad = AnalyzeComment(entry.content.text)
+			print "Positive: ", happy
+			print "Negative: ", sad
+			for a in entry.author:
+				try:
+					user_entry = yt_service.GetYouTubeUserEntry(username=a.name.text)
+				except gdata.service.RequestError, e:
+					print "Request Error: ", e
+					gender, age, location = None, None, None
+					people.append(Commenter(entry.content.text, entry.published.text,happy,sad, gender, age, location))
+				else:
+					gender, age, location = PrintUserEntry(user_entry)
+					people.append(Commenter(entry.content.text, entry.published.text,happy,sad, gender, age, location))
+		
+			happy_total += happy
+			sad_total += sad
+			total += 1
+		feed = yt_service.Query(feed.GetNextLink().href)
+	print people
+	print "Overall Positive: ", happy_total/total
+	print "Overall Negative: ", sad_total/total
+	
 
