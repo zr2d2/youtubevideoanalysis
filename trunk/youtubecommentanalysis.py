@@ -312,21 +312,26 @@ else:
 	Democrat = 0
 	Republican = 0
 	
-	NE = 0
-	MW = 0
-	SO = 0
-	WE = 0
-	US = 0
-	OT = 0
+	NE = [0, 0, 0, 0]
+	MW = [0, 0, 0, 0]
+	SO = [0, 0, 0, 0]
+	WE = [0, 0, 0, 0]
+	US = [0, 0, 0, 0]
+	OT = [0, 0, 0, 0]
 
-	Male = 0
-	Female = 0
+	Male = [0, 0, 0, 0]
+	Female = [0, 0, 0, 0]
 
-	TE = 0
-	YA = 0
-	AD = 0
-	EL = 0
-
+	Teen = [0, 0, 0, 0]
+	YoungAdult = [0, 0, 0, 0]
+	Adult = [0, 0, 0, 0]
+	Senior = [0, 0, 0, 0]
+	
+	T = 0 #Total
+	R = 1 #Republican
+	D = 2 #Democrat
+	I = 3 #Indepndent
+	
 	for p in people:
 		Party = AnalyzeCommenter(p)
 		if Party == "r":
@@ -337,47 +342,126 @@ else:
 			Independent += 1
 		if p.location:
 			if located_in(NORTHEAST, p.location):
-				NE += 1
+				NE[T] += 1
+				if Party == "r":
+					NE[R] += 1
+				if Party == "d":
+					NE[D] += 1
+				if Party == "i":
+					NE[I] += 1
 			elif located_in(MIDWEST, p.location):
-				MW += 1
+				MW[T] += 1
+				if Party == "r":
+					MW[R] += 1
+				if Party == "d":
+					MW[D] += 1
+				if Party == "i":
+					MW[I] += 1
 			elif located_in(SOUTH, p.location):
-				SO += 1
+				SO[T] += 1
+				if Party == "r":
+					SO[R] += 1
+				if Party == "d":
+					SO[D] += 1
+				if Party == "i":
+					SO[I] += 1
 			elif located_in(WEST, p.location):
-				WE += 1
+				WE[T] += 1
+				if Party == "r":
+					WE[R] += 1
+				if Party == "d":
+					WE[D] += 1
+				if Party == "i":
+					WE[I] += 1
 			elif located_in(UNITEDSTATES,p.location):
-				US +=1
+				US[T] +=1
+				if Party == "r":
+					US[R] += 1
+				if Party == "d":
+					US[D] += 1
+				if Party == "i":
+					US[I] += 1
 			else:
-				OT +=1
+				OT[T] +=1
+				if Party == "r":
+					OT[R] += 1
+				if Party == "d":
+					OT[D] += 1
+				if Party == "i":
+					OT[I] += 1
 		else:
-			OT += 1
+			OT[0] += 1
+			if Party == "r":
+				OT[R] += 1
+			if Party == "d":
+				OT[D] += 1
+			if Party == "i":
+				OT[I] += 1
 		if p.gender == "m":
-			Male += 1
+			Male[T] += 1
+			if Party == "r":
+				Male[R] += 1
+			if Party == "d":
+				Male[D] += 1
+			if Party == "i":
+				Male[I] += 1
 		else:
-			Female += 1
+			Female[T] += 1
+			if Party == "r":
+				Female[R] += 1
+			if Party == "d":
+				Female[D] += 1
+			if Party == "i":
+				Female[I] += 1
+
 		if p.age < 18:
-			TE += 1
+			Teen[T] += 1
+			if Party == "r":
+				Teen[R] += 1
+			if Party == "d":
+				Teen[D] += 1
+			if Party == "i":
+				Teen[I] += 1
 		elif p.age < 30:
-			YA += 1
+			YoungAdult[T] += 1
+			if Party == "r":
+				YoungAdult[R] += 1
+			if Party == "d":
+				YoungAdult[D] += 1
+			if Party == "i":
+				YoungAdult[I] += 1
 		elif p.age < 60:
-			AD += 1
+			Adult[T] += 1
+			if Party == "r":
+				Adult[R] += 1
+			if Party == "d":
+				Adult[D] += 1
+			if Party == "i":
+				Adult[I] += 1
 		else:
-			EL += 1
+			Senior[T] += 1
+			if Party == "r":
+				Senior[R] += 1
+			if Party == "d":
+				Senior[D] += 1
+			if Party == "i":
+				Senior[I] += 1
 
 	print "R: ",Republican, float(Republican)/len(people)
 	print "D: ",Democrat, float(Democrat)/len(people)
 	print "I: ",Independent, float(Independent)/len(people)
 
-	print "NE: ",NE, float(NE)/len(people)
-	print "MW: ",MW, float(MW)/len(people)
-	print "SO: ",SO, float(SO)/len(people)
-	print "WE: ",WE, float(WE)/len(people)
-	print "US: ",US, float(US)/len(people)
-	print "OT: ",OT, float(OT)/len(people)
+	print "NE: ",NE, float(NE[T])/len(people)
+	print "MW: ",MW, float(MW[T])/len(people)
+	print "SO: ",SO, float(SO[T])/len(people)
+	print "WE: ",WE, float(WE[T])/len(people)
+	print "US: ",US, float(US[T])/len(people)
+	print "OT: ",OT, float(OT[T])/len(people)
 
-	print "M: ",Male, float(Male)/len(people)
-	print "F: ",Female, float(Female)/len(people)
+	print "M: ",Male, float(Male[T])/len(people)
+	print "F: ",Female, float(Female[T])/len(people)
 
-	print "0-17: ",TE, float(TE)/len(people)
-	print "18-29: ",YA, float(YA)/len(people)
-	print "30-60: ",AD, float(AD)/len(people)
-	print "60+: ",EL, float(EL)/len(people)
+	print "0-17: ",Teen, float(Teen[T])/len(people)
+	print "18-29: ",YoungAdult, float(YoungAdult[T])/len(people)
+	print "30-60: ",Adult, float(Adult[T])/len(people)
+	print "60+: ",Senior, float(Senior[T])/len(people)
