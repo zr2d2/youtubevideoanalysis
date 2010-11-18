@@ -6,6 +6,7 @@ import gdata.youtube.service
 import urllib2
 import time
 import random
+import csv
 
 from Person import Commenter
 
@@ -225,17 +226,17 @@ def PrintUserEntry(user,comment):
 #  print 'URI: %s\n' % user.id.text
   age = None
   if user.age:
-    print 'Age: %s\n' % user.age.text
+#    print 'Age: %s\n' % user.age.text
     age = int(user.age.text)
   gender = None
   if user.gender:
-    print 'Gender: %s\n' % user.gender.text
+#    print 'Gender: %s\n' % user.gender.text
     gender = user.gender.text
   else:
     gender = AnalyzeGender(comment)
   location = None
   if user.location:
-    print 'Location: %s\n' % user.location.text
+#    print 'Location: %s\n' % user.location.text
     location = user.location.text
   return gender, age, location
   # check if there is information in the other fields and if so print it
@@ -274,6 +275,20 @@ yt_service = gdata.youtube.service.YouTubeService()
 entry = yt_service.GetYouTubeVideoEntry(video_id=video_ID)
 PrintEntryDetails(entry)
 
+def writetofile(filename, headings, values):
+	writer = csv.writer(open(filename, 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+	l = []
+	for h in headings:
+		l.append(unicode(h,"utf-8"))
+	writer.writerow(l)
+	l = []
+	for v in values:
+		l.append(v)		
+	writer.writerow(l)
+
+from pychart import *
+import sys
+
 print "Comments:"
 try:
 	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
@@ -288,10 +303,10 @@ else:
 	total = 0
 	people = []
 	#1000 Cap
-	for x in xrange(0,5):
+	for x in xrange(0,39):
 		for entry in feed.entry:
-			print entry.content.text #comment
-			print entry.published.text #date
+#			print entry.content.text #comment
+#			print entry.published.text #date
 			for a in entry.author:
 				try:
 					user_entry = yt_service.GetYouTubeUserEntry(username=a.name.text)
@@ -447,21 +462,27 @@ else:
 			if Party == "i":
 				Senior[I] += 1
 
+	#	ofile  = open('ttest.csv', "wb")
+	writetofile("party.csv",["Republican","Democrat","Independent"],[Republican,Democrat,Independent])
 	print "R: ",Republican, float(Republican)/len(people)
 	print "D: ",Democrat, float(Democrat)/len(people)
 	print "I: ",Independent, float(Independent)/len(people)
-
+	writetofile("location.csv",["Northeast","Midwest","South","West","US","Other"],[NE[T],MW[T],SO[T],WE[T],US[T],OT[T]])
+	writetofile("locationparty.csv",["Northeast Republican", "Northeast Democrat", "Northeast Independent","Midwest Republican", "Midwest Democrat", "Midwest Independent","South Republican", "South Democrat", "South Independent","West Republican", "West Democrat", "West Independent"], NE[R].NE[D],NE[I],MW[R].MW[D],MW[I],SO[R].SO[D],SO[I],WE[R].WE[D],WE[I])
 	print "NE: ",NE, float(NE[T])/len(people)
 	print "MW: ",MW, float(MW[T])/len(people)
 	print "SO: ",SO, float(SO[T])/len(people)
 	print "WE: ",WE, float(WE[T])/len(people)
 	print "US: ",US, float(US[T])/len(people)
 	print "OT: ",OT, float(OT[T])/len(people)
-
+	writetofile("gender.csv", ["Male","Female"],[Male[T],Female[T]])
+	writetofile("genderparty.csv", ["Male Republican", "Male Democrat", "Male Independent", "Female Republican", "Female Democrat", "Female Independent"], [Male[R],Male[D],Male[I],Female[R],Female[D],Female[I]])
 	print "M: ",Male, float(Male[T])/len(people)
 	print "F: ",Female, float(Female[T])/len(people)
-
+	writetofile("age.csv",["0-17","18-29","30-60","60+"],[Teen[T],YoungAdult[T],Adult[T],Senior[T]])
+	writetofile("age.csv",["0-17 Republican","0-17 Democrat","0-17 Independent","18-29 Republican","18-29 Democrat","18-29 Independent","30-60 Republican","30-60 Democrat","30-60 Independent","60+ Republican","60+ Democrat", "60+ Independent"])
 	print "0-17: ",Teen, float(Teen[T])/len(people)
 	print "18-29: ",YoungAdult, float(YoungAdult[T])/len(people)
 	print "30-60: ",Adult, float(Adult[T])/len(people)
 	print "60+: ",Senior, float(Senior[T])/len(people)
+
