@@ -5,6 +5,8 @@ import gdata.youtube
 import gdata.youtube.service
 import urllib2
 import time
+import random
+
 from Person import Commenter
 
 #Uclassify 
@@ -13,7 +15,7 @@ from Person import Commenter
 #Write
 #zQULlBKeMVoEdWHCMODT3LsqXVk
 
-def AnalyzeComment(Comment):
+def analyze_comment(Comment):
 	URL = "http://uclassify.com/browse/prfekt/Mood/ClassifyText?readkey=VwTa4ul5NrVCqyD147jT9vomcGg&text="+Comment.replace(" ", "+").replace("@","").replace("\n","").replace("\r","")
 #Comment.replace(" ", "+")
 	#print URL
@@ -43,10 +45,48 @@ def AnalyzeComment(Comment):
 			if line.rfind('className="happy"') >=0:
 				#print line.rfind('className="happy"'),line 
 				happy = float(line.replace("<","").replace("class","").replace("Name","").replace("happy","").replace("=","").replace("/>","").replace('"',"").replace("p",""))
-				return happy, 1-happy
+				if happy <= .4:
+					return happy, 1, 0, 0
+				if happy <= .6:
+					return happy, 0, 1, 1
+				else:
+					return happy, 0, 1, 0
 				
 
+def AnalyzeGender(Comment):
+	URL = "http://uclassify.com/browse/uClassify/GenderAnalyzer_v5/ClassifyText?readkey=VwTa4ul5NrVCqyD147jT9vomcGg&text="+Comment.replace(" ", "+").replace("@","").replace("\n","").replace("\r","")
+#Comment.replace(" ", "+")
 
+	response = urllib2.urlopen(URL)
+
+	html = response.read()
+	#error handling
+	req = urllib2.Request(URL)
+	try:
+		response = urllib2.urlopen(req)
+	except urllib2.HTTPError, e:
+		print 'The server couldn\'t fulfill the request.'
+		print 'Error code: ', e.code
+	except urllib2.URLError, e:
+		print 'We failed to reach a server.'
+		print 'Reason: ', e.reason
+	else:
+		#<status success="true" statusCode="2000"/>
+		#<readCalls>
+		#<classify id="cls1">
+		#	<classification>
+#				<class className="happy" p="0.585561"/>
+
+		# everything is fine
+		for line in html.splitlines():
+			if line.rfind('className="female"') >=0:
+				#print line.rfind('className="happy"'),line 
+				female = float(line.replace("<","").replace("class","").replace("Name","").replace("female","").replace("=","").replace("/>","").replace('"',"").replace("p",""))
+				print female
+				if female > .5:
+					return "f"
+				else:
+					return "m"
 
 def GetUserUploadsFeed(username):
 	yt_service = gdata.youtube.service.YouTubeService()
@@ -70,6 +110,7 @@ def Login(email, password):
 	yt_service.developer_key = 'AI39si7JxcEVDfPMZvcvw9rXyXNtSBhwzQiQTyTsGm4PTIU-TUDXkvy2fcpQpJggdYpW0zI4-u5QHs6_s8RHqYVV_ujUh8m-rg'
 	yt_service.client_id = 'webscitest'
 	yt_service.ProgrammaticLogin()
+
 def PrintEntryDetails(entry):
 	print 'Video title: %s' % entry.media.title.text
 	print 'Video published on: %s ' % entry.published.text
@@ -95,7 +136,91 @@ def PrintEntryDetails(entry):
 	for thumbnail in entry.media.thumbnail:
 		print 'Thumbnail url: %s' % thumbnail.url
 
-def PrintUserEntry(user):
+
+NORTHEAST = ["Connecticut", "Maine",  "Massachusetts",  "New Hampshire", "Rhode Island", "Vermont", "CT", "ME", "MA", "NH", "RI", "VT"]
+MIDWEST = ["Illinois", "Indiana", "Iowa", "Kansas", "Michigan", "Minnesota", "Missouri", "Nebraska", "North Dakota", "South Dakota", "Ohio", "Wisconsin", "IL", "IN", "IA", "KS", "MI", "MN", "NE", "ND", "SD", "OH", "WI"]
+SOUTH = ["Florida", "Georgia", "Maryland", "North Carolina", "South Carolina", "Virginia", "West Virginia", "Delaware", "Alabama", "Kentucky", "Mississippi", "Tennessee", "Arkansas", "Louisiana", "Oklahoma", "Texas", "FL", "GA", "MD", "NC", "SC", "VA", "DE", "AL", "KY", "MS", "TN", "AR", "LA", "OK", "TX"]
+WEST = ["Alaska", "Arizona", "California", "Colorado", "Hawaii", "Idaho", "Montana", "Nevada", "New Mexico", "Oregon", "Utah", "Washington", "Wyoming", "AK", "AZ", "CA", "CO", "HI", "ID", "MT", "NV", "NM", "OR", "UT", "WA"]
+UNITEDSTATES = ["United States of America", "United States", "US"]
+
+def located_in(places, place):
+	for p in places:
+		if place.find(p) >= 0:
+			return True
+	return False
+
+def analyze_location(location):
+	if location:
+		if located_in(NORTHEAST, location):
+			return .34, .54, .12
+		if located_in(MIDWEST, location):
+			return .38, .50, .12
+		if located_in(SOUTH, location):
+			return .40, .49, .11
+		if located_in(WEST, location):
+			return .36, .53, .11
+	return .38, .51, .11
+
+def analyze_online():
+	return .39, .3, .31
+
+def analyze_age(age):
+	if age >= 18 and age <= 29:
+		return .33, .32, .34
+	elif age >= 30:
+		return .44, .45, .1
+	else:
+		return .38, .51, .11
+
+def analyze_gender(gender):
+	if gender == "m":
+		return .28, .32, .34
+	else:
+		return .25, .41, .26
+AGE_WEIGHT = .25
+GEN_WEIGHT = .25
+LOC_WEIGHT = .25
+DIS_WEIGHT = .15
+ONL_WEIGHT = .1
+def AnalyzeCommenter(p):
+	Republican = 0
+	Democrat = 0
+	Independent = 0
+
+	R,D,I = analyze_age(p.age)
+	Republican += AGE_WEIGHT * R
+	Democrat += AGE_WEIGHT * D
+	Independent += AGE_WEIGHT * I
+
+	R,D,I = analyze_gender(p.gender)
+	Republican += GEN_WEIGHT * R
+	Democrat += GEN_WEIGHT * D
+	Independent += GEN_WEIGHT * I
+
+	R,D,I = analyze_location(p.location)
+	Republican += LOC_WEIGHT * R
+	Democrat += LOC_WEIGHT * D
+	Independent += LOC_WEIGHT * I
+
+	h,R,D,I = analyze_comment(p.comment)
+	Republican += DIS_WEIGHT * R
+	Democrat += DIS_WEIGHT * D
+	Independent += DIS_WEIGHT * I
+	
+	R,D,I = analyze_online()
+	Republican += ONL_WEIGHT * R
+	Democrat += ONL_WEIGHT * D
+	Independent += ONL_WEIGHT * I
+
+	r = random.random()
+	if r <= Republican:
+		return "r"
+	if r <= Republican + Democrat:
+		return "d"
+	else:
+		return "i"
+	
+def PrintUserEntry(user,comment):
   # print required fields where we know there will be information
 #  print 'URI: %s\n' % user.id.text
   age = None
@@ -106,6 +231,8 @@ def PrintUserEntry(user):
   if user.gender:
     print 'Gender: %s\n' % user.gender.text
     gender = user.gender.text
+  else:
+    gender = AnalyzeGender(comment)
   location = None
   if user.location:
     print 'Location: %s\n' % user.location.text
@@ -147,44 +274,110 @@ yt_service = gdata.youtube.service.YouTubeService()
 entry = yt_service.GetYouTubeVideoEntry(video_id=video_ID)
 PrintEntryDetails(entry)
 
-AnalyzeComment("This video is great...")
-
 print "Comments:"
 try:
 	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
 except gdata.service.RequestError, e:
 	print "Request Error: ", e
+	time.sleep(180)
+	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
 else:
-
+	analyze_age(12)
 	happy_total = 0
 	sad_total = 0
 	total = 0
-	#1000 Cap
 	people = []
-	for x in xrange(0,39):
+	#1000 Cap
+	for x in xrange(0,5):
 		for entry in feed.entry:
 			print entry.content.text #comment
 			print entry.published.text #date
-			happy, sad = AnalyzeComment(entry.content.text)
-			print "Positive: ", happy
-			print "Negative: ", sad
 			for a in entry.author:
 				try:
 					user_entry = yt_service.GetYouTubeUserEntry(username=a.name.text)
 				except gdata.service.RequestError, e:
 					print "Request Error: ", e
 					gender, age, location = None, None, None
-					people.append(Commenter(entry.content.text, entry.published.text,happy,sad, gender, age, location))
+					people.append(Commenter(entry.content.text, entry.published.text, gender, age, location))
 				else:
-					gender, age, location = PrintUserEntry(user_entry)
-					people.append(Commenter(entry.content.text, entry.published.text,happy,sad, gender, age, location))
-		
-			happy_total += happy
-			sad_total += sad
-			total += 1
-		feed = yt_service.Query(feed.GetNextLink().href)
-	print people
-	print "Overall Positive: ", happy_total/total
-	print "Overall Negative: ", sad_total/total
+					gender, age, location = PrintUserEntry(user_entry, entry.content.text)
+					people.append(Commenter(entry.content.text, entry.published.text, gender, age, location))
 	
+		try:
+			feed = yt_service.Query(feed.GetNextLink().href)
+		except gdata.service.RequestError, e:
+			time.sleep(180)
+			feed = yt_service.Query(feed.GetNextLink().href)
+	Independent = 0
+	Democrat = 0
+	Republican = 0
+	
+	NE = 0
+	MW = 0
+	SO = 0
+	WE = 0
+	US = 0
+	OT = 0
 
+	Male = 0
+	Female = 0
+
+	TE = 0
+	YA = 0
+	AD = 0
+	EL = 0
+
+	for p in people:
+		Party = AnalyzeCommenter(p)
+		if Party == "r":
+			Republican += 1
+		if Party == "d":
+			Democrat += 1
+		if Party == "i":
+			Independent += 1
+		if p.location:
+			if located_in(NORTHEAST, p.location):
+				NE += 1
+			elif located_in(MIDWEST, p.location):
+				MW += 1
+			elif located_in(SOUTH, p.location):
+				SO += 1
+			elif located_in(WEST, p.location):
+				WE += 1
+			elif located_in(UNITEDSTATES,p.location):
+				US +=1
+			else:
+				OT +=1
+		else:
+			OT += 1
+		if p.gender == "m":
+			Male += 1
+		else:
+			Female += 1
+		if p.age < 18:
+			TE += 1
+		elif p.age < 30:
+			YA += 1
+		elif p.age < 60:
+			AD += 1
+		else:
+			EL += 1
+
+	print "R: ",Republican, float(Republican)/len(people)
+	print "D: ",Democrat, float(Democrat)/len(people)
+	print "I: ",Independent, float(Independent)/len(people)
+
+	print "NE: ",NE, float(NE)/len(people)
+	print "MW: ",MW, float(MW)/len(people)
+	print "SO: ",SO, float(SO)/len(people)
+	print "WE: ",WE, float(WE)/len(people)
+	print "US: ",US, float(US)/len(people)
+	print "OT: ",OT, float(OT)/len(people)
+
+	print "M: ",Male, float(Male)/len(people)
+	print "F: ",Female, float(Female)/len(people)
+
+	print "0-17: ",TE, float(TE)/len(people)
+	print "18-29: ",YA, float(YA)/len(people)
+	print "30-60: ",AD, float(AD)/len(people)
+	print "60+: ",EL, float(EL)/len(people)

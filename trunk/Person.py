@@ -1,7 +1,8 @@
 class Commenter:
-	def __init__(self, comment, date, positive, negative, gender, age, location):
+	def __init__(self, comment, date, gender, age, location):
 		self.comment = comment
 		self.date = date
-		self.positive = positive
 		self.age = age
+		self.gender = gender
 		self.location = location
+
