@@ -303,7 +303,7 @@ else:
 	total = 0
 	people = []
 	#1000 Cap
-	for x in xrange(0,1):
+	for x in xrange(0,39):
 		for entry in feed.entry:
 #			print entry.content.text #comment
 #			print entry.published.text #date
@@ -479,7 +479,7 @@ else:
 	print "M: ",Male, float(Male[T])/len(people)
 	print "F: ",Female, float(Female[T])/len(people)
 	writetofile("age.csv",["0-17","18-29","30-60","60+"],[Teen[T],YoungAdult[T],Adult[T],Senior[T]])
-	writetofile("age.csv",["0-17 Republican","0-17 Democrat","0-17 Independent","18-29 Republican","18-29 Democrat","18-29 Independent","30-60 Republican","30-60 Democrat","30-60 Independent","60+ Republican","60+ Democrat", "60+ Independent"],[Teen[R],Teen[D],Teen[I],YoungAdult[R],YoungAdult[D],YoungAdult[I],Adult[R],Adult[D],Adult[I],Senior[R],Senior[D],Senior[I]])
+	writetofile("ageparty.csv",["0-17 Republican","0-17 Democrat","0-17 Independent","18-29 Republican","18-29 Democrat","18-29 Independent","30-60 Republican","30-60 Democrat","30-60 Independent","60+ Republican","60+ Democrat", "60+ Independent"],[Teen[R],Teen[D],Teen[I],YoungAdult[R],YoungAdult[D],YoungAdult[I],Adult[R],Adult[D],Adult[I],Senior[R],Senior[D],Senior[I]])
 	print "0-17: ",Teen, float(Teen[T])/len(people)
 	print "18-29: ",YoungAdult, float(YoungAdult[T])/len(people)
 	print "30-60: ",Adult, float(Adult[T])/len(people)
