@@ -289,7 +289,7 @@ def writetofile(filename, headings, values):
 from pychart import *
 import sys
 
-print "Comments:"
+print "Gathering Comments"
 try:
 	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
 except gdata.service.RequestError, e:
@@ -303,7 +303,7 @@ else:
 	total = 0
 	people = []
 	#1000 Cap
-	for x in xrange(0,39):
+	for x in xrange(0,1):
 		for entry in feed.entry:
 #			print entry.content.text #comment
 #			print entry.published.text #date
@@ -462,13 +462,12 @@ else:
 			if Party == "i":
 				Senior[I] += 1
 
-	#	ofile  = open('ttest.csv', "wb")
 	writetofile("party.csv",["Republican","Democrat","Independent"],[Republican,Democrat,Independent])
 	print "R: ",Republican, float(Republican)/len(people)
 	print "D: ",Democrat, float(Democrat)/len(people)
 	print "I: ",Independent, float(Independent)/len(people)
 	writetofile("location.csv",["Northeast","Midwest","South","West","US","Other"],[NE[T],MW[T],SO[T],WE[T],US[T],OT[T]])
-	writetofile("locationparty.csv",["Northeast Republican", "Northeast Democrat", "Northeast Independent","Midwest Republican", "Midwest Democrat", "Midwest Independent","South Republican", "South Democrat", "South Independent","West Republican", "West Democrat", "West Independent"], NE[R].NE[D],NE[I],MW[R].MW[D],MW[I],SO[R].SO[D],SO[I],WE[R].WE[D],WE[I])
+	writetofile("locationparty.csv",["Northeast Republican", "Northeast Democrat", "Northeast Independent","Midwest Republican", "Midwest Democrat", "Midwest Independent","South Republican", "South Democrat", "South Independent","West Republican", "West Democrat", "West Independent"], [NE[R],NE[D],NE[I],MW[R],MW[D],MW[I],SO[T],SO[R],SO[D],SO[I],WE[R],WE[D],WE[I]])
 	print "NE: ",NE, float(NE[T])/len(people)
 	print "MW: ",MW, float(MW[T])/len(people)
 	print "SO: ",SO, float(SO[T])/len(people)
@@ -480,7 +479,7 @@ else:
 	print "M: ",Male, float(Male[T])/len(people)
 	print "F: ",Female, float(Female[T])/len(people)
 	writetofile("age.csv",["0-17","18-29","30-60","60+"],[Teen[T],YoungAdult[T],Adult[T],Senior[T]])
-	writetofile("age.csv",["0-17 Republican","0-17 Democrat","0-17 Independent","18-29 Republican","18-29 Democrat","18-29 Independent","30-60 Republican","30-60 Democrat","30-60 Independent","60+ Republican","60+ Democrat", "60+ Independent"])
+	writetofile("age.csv",["0-17 Republican","0-17 Democrat","0-17 Independent","18-29 Republican","18-29 Democrat","18-29 Independent","30-60 Republican","30-60 Democrat","30-60 Independent","60+ Republican","60+ Democrat", "60+ Independent"],[Teen[R],Teen[D],Teen[I],YoungAdult[R],YoungAdult[D],YoungAdult[I],Adult[R],Adult[D],Adult[I],Senior[R],Senior[D],Senior[I]])
 	print "0-17: ",Teen, float(Teen[T])/len(people)
 	print "18-29: ",YoungAdult, float(YoungAdult[T])/len(people)
 	print "30-60: ",Adult, float(Adult[T])/len(people)
