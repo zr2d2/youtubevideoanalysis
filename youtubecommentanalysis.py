@@ -294,7 +294,7 @@ try:
 	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
 except gdata.service.RequestError, e:
 	print "Request Error: ", e
-	time.sleep(180)
+	time.sleep(3000)
 	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
 else:
 	analyze_age(12)
@@ -305,8 +305,10 @@ else:
 	#1000 Cap
 	for x in xrange(0,39):
 		for entry in feed.entry:
+			print "."
+			time.sleep(1)
 #			print entry.content.text #comment
-#			print entry.published.text #date
+#			print entry.publishsed.text #date
 			for a in entry.author:
 				try:
 					user_entry = yt_service.GetYouTubeUserEntry(username=a.name.text)
@@ -321,7 +323,7 @@ else:
 		try:
 			feed = yt_service.Query(feed.GetNextLink().href)
 		except gdata.service.RequestError, e:
-			time.sleep(180)
+			time.sleep(500)
 			feed = yt_service.Query(feed.GetNextLink().href)
 	Independent = 0
 	Democrat = 0
