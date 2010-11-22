@@ -5,4 +5,4 @@ class Commenter:
 		self.age = age
 		self.gender = gender
 		self.location = location
-
+		self.positive = 0
