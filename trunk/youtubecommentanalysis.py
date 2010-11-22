@@ -292,6 +292,10 @@ import sys
 print "Gathering Comments"
 try:
 	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
+	import os
+	
+	commentfile = open(os.getcwd()+'/comments2.txt', 'r')
+
 except gdata.service.RequestError, e:
 	print "Request Error: ", e
 	time.sleep(3000)
@@ -303,28 +307,33 @@ else:
 	total = 0
 	people = []
 	#1000 Cap
-	for x in xrange(0,39):
-		for entry in feed.entry:
-			print "."
-			time.sleep(1)
-#			print entry.content.text #comment
-#			print entry.publishsed.text #date
-			for a in entry.author:
-				try:
-					user_entry = yt_service.GetYouTubeUserEntry(username=a.name.text)
-				except gdata.service.RequestError, e:
-					print "Request Error: ", e
-					gender, age, location = None, None, None
-					people.append(Commenter(entry.content.text, entry.published.text, gender, age, location))
-				else:
-					gender, age, location = PrintUserEntry(user_entry, entry.content.text)
-					people.append(Commenter(entry.content.text, entry.published.text, gender, age, location))
-	
-		try:
-			feed = yt_service.Query(feed.GetNextLink().href)
-		except gdata.service.RequestError, e:
-			time.sleep(500)
-			feed = yt_service.Query(feed.GetNextLink().href)
+	for entry in commentfile.read().split("\n+_+comment+_+\n"):
+		first = True
+		author = ""
+		date = ""
+		comment = ""
+		for line in entry.split("\n"):
+			if first:
+				print line, len(line.split("\t"))
+				if len(line.split("\t")) >= 2:
+					author = line.split("\t")[0]
+					date = line.split("\t")[1]
+				first = False
+			else:
+				comment = comment + line
+		time.sleep(1)
+		print comment
+		if author:
+			try:
+				user_entry = yt_service.GetYouTubeUserEntry(username=author)
+			except gdata.service.RequestError, e:
+				print "Request Error: ", e
+				gender, age, location = None, None, None
+				people.append(Commenter(comment, date, gender, age, location))
+			else:
+				gender, age, location = PrintUserEntry(user_entry, comment)
+				people.append(Commenter(comment, date, gender, age, location))
+
 	Independent = 0
 	Democrat = 0
 	Republican = 0
