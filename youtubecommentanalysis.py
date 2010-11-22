@@ -1,5 +1,7 @@
-#Daniel Souza
-#Lab 04
+#Daniel Souza, Phil Sarid, Zach Rowe
+#Youtube Comment Analyzer
+#Parses text file of comments and analyzes them
+#Output to sever .csv files
 
 import gdata.youtube
 import gdata.youtube.service
@@ -16,6 +18,10 @@ from Person import Commenter
 #Write
 #zQULlBKeMVoEdWHCMODT3LsqXVk
 
+#File location of comment from working directory
+COMMENTFILE = '/comments2.txt'
+
+#Given a string, returns Positive, Republican, Democrat, Independent rating
 def analyze_comment(Comment):
 	URL = "http://uclassify.com/browse/prfekt/Mood/ClassifyText?readkey=VwTa4ul5NrVCqyD147jT9vomcGg&text="+Comment.replace(" ", "+").replace("@","").replace("\n","").replace("\r","")
 #Comment.replace(" ", "+")
@@ -53,7 +59,7 @@ def analyze_comment(Comment):
 				else:
 					return happy, 0, 1, 0
 				
-
+#Given a string, uses uClassify to analyze gender and return m or f
 def AnalyzeGender(Comment):
 	URL = "http://uclassify.com/browse/uClassify/GenderAnalyzer_v5/ClassifyText?readkey=VwTa4ul5NrVCqyD147jT9vomcGg&text="+Comment.replace(" ", "+").replace("@","").replace("\n","").replace("\r","")
 #Comment.replace(" ", "+")
@@ -143,13 +149,13 @@ MIDWEST = ["Illinois", "Indiana", "Iowa", "Kansas", "Michigan", "Minnesota", "Mi
 SOUTH = ["Florida", "Georgia", "Maryland", "North Carolina", "South Carolina", "Virginia", "West Virginia", "Delaware", "Alabama", "Kentucky", "Mississippi", "Tennessee", "Arkansas", "Louisiana", "Oklahoma", "Texas", "FL", "GA", "MD", "NC", "SC", "VA", "DE", "AL", "KY", "MS", "TN", "AR", "LA", "OK", "TX"]
 WEST = ["Alaska", "Arizona", "California", "Colorado", "Hawaii", "Idaho", "Montana", "Nevada", "New Mexico", "Oregon", "Utah", "Washington", "Wyoming", "AK", "AZ", "CA", "CO", "HI", "ID", "MT", "NV", "NM", "OR", "UT", "WA"]
 UNITEDSTATES = ["United States of America", "United States", "US"]
-
+#if the item place is a substring in the list of places, returns true
 def located_in(places, place):
 	for p in places:
 		if place.find(p) >= 0:
 			return True
 	return False
-
+#returns a probability for Republican, Democrat, Independent based on the given location
 def analyze_location(location):
 	if location:
 		if located_in(NORTHEAST, location):
@@ -162,9 +168,10 @@ def analyze_location(location):
 			return .36, .53, .11
 	return .38, .51, .11
 
+##returns a probability for Republican, Democrat, Independent
 def analyze_online():
 	return .39, .3, .31
-
+##returns a probability for Republican, Democrat, Independent based on given age
 def analyze_age(age):
 	if age >= 18 and age <= 29:
 		return .33, .32, .34
@@ -173,6 +180,7 @@ def analyze_age(age):
 	else:
 		return .38, .51, .11
 
+##returns a probability for Republican, Democrat, Independent based on given gender
 def analyze_gender(gender):
 	if gender == "m":
 		return .28, .32, .34
@@ -183,30 +191,35 @@ GEN_WEIGHT = .25
 LOC_WEIGHT = .25
 DIS_WEIGHT = .15
 ONL_WEIGHT = .1
+#given a Commenter, returns most likely political affiliation ("r", "d", "i")
 def AnalyzeCommenter(p):
 	Republican = 0
 	Democrat = 0
 	Independent = 0
 
-	R,D,I = analyze_age(p.age)
-	Republican += AGE_WEIGHT * R
-	Democrat += AGE_WEIGHT * D
-	Independent += AGE_WEIGHT * I
+	if p.age:
+		R,D,I = analyze_age(p.age)
+		Republican += AGE_WEIGHT * R
+		Democrat += AGE_WEIGHT * D
+		Independent += AGE_WEIGHT * I
+	
+	if p.gender:
+		R,D,I = analyze_gender(p.gender)
+		Republican += GEN_WEIGHT * R
+		Democrat += GEN_WEIGHT * D
+		Independent += GEN_WEIGHT * I
 
-	R,D,I = analyze_gender(p.gender)
-	Republican += GEN_WEIGHT * R
-	Democrat += GEN_WEIGHT * D
-	Independent += GEN_WEIGHT * I
-
-	R,D,I = analyze_location(p.location)
-	Republican += LOC_WEIGHT * R
-	Democrat += LOC_WEIGHT * D
-	Independent += LOC_WEIGHT * I
-
-	h,R,D,I = analyze_comment(p.comment)
-	Republican += DIS_WEIGHT * R
-	Democrat += DIS_WEIGHT * D
-	Independent += DIS_WEIGHT * I
+	if p.location:
+		R,D,I = analyze_location(p.location)
+		Republican += LOC_WEIGHT * R
+		Democrat += LOC_WEIGHT * D
+		Independent += LOC_WEIGHT * I
+	
+	if p.comment:
+		p.positive,R,D,I = analyze_comment(p.comment)
+		Republican += DIS_WEIGHT * R
+		Democrat += DIS_WEIGHT * D
+		Independent += DIS_WEIGHT * I
 	
 	R,D,I = analyze_online()
 	Republican += ONL_WEIGHT * R
@@ -220,7 +233,7 @@ def AnalyzeCommenter(p):
 		return "d"
 	else:
 		return "i"
-	
+#returns user's age, gender and location	
 def PrintUserEntry(user,comment):
   # print required fields where we know there will be information
 #  print 'URI: %s\n' % user.id.text
@@ -274,7 +287,7 @@ video_ID = "9SnQOdEXbNQ"
 yt_service = gdata.youtube.service.YouTubeService()
 entry = yt_service.GetYouTubeVideoEntry(video_id=video_ID)
 PrintEntryDetails(entry)
-
+#writes headings and values to a .csv
 def writetofile(filename, headings, values):
 	writer = csv.writer(open(filename, 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 	l = []
@@ -283,10 +296,21 @@ def writetofile(filename, headings, values):
 	writer.writerow(l)
 	l = []
 	for v in values:
-		l.append(v)		
+		l.append(v)
 	writer.writerow(l)
-
-from pychart import *
+#writes headings and multiple values for each heading to a .csv
+def writemanytofile(filename, headings, values):
+	writer = csv.writer(open(filename, 'wb'), delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+	l = []
+	for h in headings:
+		l.append(unicode(h,"utf-8"))
+	writer.writerow(l)
+	
+	for v in values:
+		l = []
+		for x in v:
+			l.append(x)
+		writer.writerow(l)
 import sys
 
 print "Gathering Comments"
@@ -294,19 +318,15 @@ try:
 	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
 	import os
 	
-	commentfile = open(os.getcwd()+'/comments2.txt', 'r')
+	commentfile = open(os.getcwd()+ COMMENTFILE, 'r')
 
 except gdata.service.RequestError, e:
 	print "Request Error: ", e
 	time.sleep(3000)
 	feed = yt_service.GetYouTubeVideoCommentFeed(video_id=video_ID)
 else:
-	analyze_age(12)
-	happy_total = 0
-	sad_total = 0
-	total = 0
+	#get all comments and author information for all files
 	people = []
-	#1000 Cap
 	for entry in commentfile.read().split("\n+_+comment+_+\n"):
 		first = True
 		author = ""
@@ -321,8 +341,7 @@ else:
 				first = False
 			else:
 				comment = comment + line
-		time.sleep(1)
-		print comment
+		time.sleep(.1)
 		if author:
 			try:
 				user_entry = yt_service.GetYouTubeUserEntry(username=author)
@@ -357,15 +376,60 @@ else:
 	R = 1 #Republican
 	D = 2 #Democrat
 	I = 3 #Indepndent
+
+	Positive = 0
+	Negative = 0
 	
+	_0year = [0,0,0]
+	_1year = [0,0,0]
+	_2year = [0,0,0]
+
+
+	_0yearposneg = [0,0]
+	_1yearposneg = [0,0]
+	_2yearposneg = [0,0]
+
 	for p in people:
 		Party = AnalyzeCommenter(p)
+		#Party Affiliation
 		if Party == "r":
 			Republican += 1
 		if Party == "d":
 			Democrat += 1
 		if Party == "i":
 			Independent += 1
+		#How Positive or Negative
+		Positive += p.positive
+		Negative += 1-p.positive
+		#Positive and Negative and Party Affiliation over time
+		if p.date == "1 year ago" or p.date == "11 months ago":
+			_1yearposneg[0] += p.postive
+			_1yearposneg[1] += 1-p.postive
+			if Party == "r":
+				_1year[0] += 1
+			if Party == "d":
+				_1year[1] += 1
+			if Party == "i":
+				_1year[2] +=1
+		elif p.date == "2 years ago":
+			_2yearposneg[0] += p.postive
+			_2yearposneg[1] += 1-p.postive
+			if Party == "r":
+				_2year[0] += 1
+			if Party == "d":
+				_2year[1] += 1
+			if Party == "i":
+				_2year[2] +=1
+		else:
+			_0yearposneg[0] += p.positive
+			_0yearposneg[1] += 1-p.positive
+			if Party == "r":
+				_0year[0] += 1
+			if Party == "d":
+				_0year[1] += 1
+			if Party == "i":
+				_0year[2] +=1
+		#Location/Location by Party Affiliation	
 		if p.location:
 			if located_in(NORTHEAST, p.location):
 				NE[T] += 1
@@ -439,7 +503,7 @@ else:
 				Female[D] += 1
 			if Party == "i":
 				Female[I] += 1
-
+		#Age/Age by Party Affiliation
 		if p.age < 18:
 			Teen[T] += 1
 			if Party == "r":
@@ -473,26 +537,38 @@ else:
 			if Party == "i":
 				Senior[I] += 1
 
-	writetofile("party.csv",["Republican","Democrat","Independent"],[Republican,Democrat,Independent])
+	writetofile("party1.csv",["Republican","Democrat","Independent"],[Republican,Democrat,Independent])
 	print "R: ",Republican, float(Republican)/len(people)
 	print "D: ",Democrat, float(Democrat)/len(people)
 	print "I: ",Independent, float(Independent)/len(people)
-	writetofile("location.csv",["Northeast","Midwest","South","West","US","Other"],[NE[T],MW[T],SO[T],WE[T],US[T],OT[T]])
-	writetofile("locationparty.csv",["Northeast Republican", "Northeast Democrat", "Northeast Independent","Midwest Republican", "Midwest Democrat", "Midwest Independent","South Republican", "South Democrat", "South Independent","West Republican", "West Democrat", "West Independent"], [NE[R],NE[D],NE[I],MW[R],MW[D],MW[I],SO[T],SO[R],SO[D],SO[I],WE[R],WE[D],WE[I]])
+	writetofile("location1.csv",["Northeast","Midwest","South","West","US","Other"],[NE[T],MW[T],SO[T],WE[T],US[T],OT[T]])
+	writetofile("locationparty1.csv",["Northeast Republican", "Northeast Democrat", "Northeast Independent","Midwest Republican", "Midwest Democrat", "Midwest Independent","South Republican", "South Democrat", "South Independent","West Republican", "West Democrat", "West Independent"], [NE[R],NE[D],NE[I],MW[R],MW[D],MW[I],SO[T],SO[R],SO[D],SO[I],WE[R],WE[D],WE[I]])
 	print "NE: ",NE, float(NE[T])/len(people)
 	print "MW: ",MW, float(MW[T])/len(people)
 	print "SO: ",SO, float(SO[T])/len(people)
 	print "WE: ",WE, float(WE[T])/len(people)
 	print "US: ",US, float(US[T])/len(people)
 	print "OT: ",OT, float(OT[T])/len(people)
-	writetofile("gender.csv", ["Male","Female"],[Male[T],Female[T]])
-	writetofile("genderparty.csv", ["Male Republican", "Male Democrat", "Male Independent", "Female Republican", "Female Democrat", "Female Independent"], [Male[R],Male[D],Male[I],Female[R],Female[D],Female[I]])
+	writetofile("gender1.csv", ["Male","Female"],[Male[T],Female[T]])
+	writetofile("genderparty1.csv", ["Male Republican", "Male Democrat", "Male Independent", "Female Republican", "Female Democrat", "Female Independent"], [Male[R],Male[D],Male[I],Female[R],Female[D],Female[I]])
 	print "M: ",Male, float(Male[T])/len(people)
 	print "F: ",Female, float(Female[T])/len(people)
-	writetofile("age.csv",["0-17","18-29","30-60","60+"],[Teen[T],YoungAdult[T],Adult[T],Senior[T]])
-	writetofile("ageparty.csv",["0-17 Republican","0-17 Democrat","0-17 Independent","18-29 Republican","18-29 Democrat","18-29 Independent","30-60 Republican","30-60 Democrat","30-60 Independent","60+ Republican","60+ Democrat", "60+ Independent"],[Teen[R],Teen[D],Teen[I],YoungAdult[R],YoungAdult[D],YoungAdult[I],Adult[R],Adult[D],Adult[I],Senior[R],Senior[D],Senior[I]])
+	writetofile("age1.csv",["0-17","18-29","30-60","60+"],[Teen[T],YoungAdult[T],Adult[T],Senior[T]])
+	writetofile("ageparty1.csv",["0-17 Republican","0-17 Democrat","0-17 Independent","18-29 Republican","18-29 Democrat","18-29 Independent","30-60 Republican","30-60 Democrat","30-60 Independent","60+ Republican","60+ Democrat", "60+ Independent"],[Teen[R],Teen[D],Teen[I],YoungAdult[R],YoungAdult[D],YoungAdult[I],Adult[R],Adult[D],Adult[I],Senior[R],Senior[D],Senior[I]])
 	print "0-17: ",Teen, float(Teen[T])/len(people)
 	print "18-29: ",YoungAdult, float(YoungAdult[T])/len(people)
 	print "30-60: ",Adult, float(Adult[T])/len(people)
 	print "60+: ",Senior, float(Senior[T])/len(people)
+
+	print "Positive: ", Positive
+	print "Negative: ", Negative
+	writetofile("attitude1.csv",["Positive","Negative"], [Positive,Negative])
+	print "0 year: ", _0year
+	print "1 year: ", _1year
+	print "2 year: ", _2year
+	writemanytofile("partybyyear1.csv",["Republican","Democrat","Independent"], [[_0year[0],_1year[0], _2year[0]],[_0year[1],_1year[1], _2year[1]],[_0year[2],_1year[2], _2year[2]]])
+	print _0yearposneg
+	print _1yearposneg 
+	print _2yearposneg
+	writemanytofile("attitudebyyear1.csv", ["Positive", "Negative"], [[_0yearposneg[0],_1yearposneg[0], _2yearposneg[0]],[_0yearposneg[1],_1yearposneg[1], _2yearposneg[1]]])
 
